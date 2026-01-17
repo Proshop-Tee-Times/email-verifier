@@ -1,4 +1,3 @@
-# List of disposable email domains
 0-mail.com
 027168.com
 0815.ru
@@ -53,15 +52,18 @@
 10x9.com
 11163.com
 123-m.com
+126.com
 12hosting.net
 12houremail.com
 12minutemail.com
 12minutemail.net
 12storage.com
+139.com
 140unichars.com
 147.cl
 14n.co.uk
 15qm.com
+163.com
 189.email
 1blackmoon.com
 1ce.us
@@ -108,6 +110,7 @@
 30minutemail.com
 30wave.com
 3202.com
+33mail.com
 36ru.com
 3a88.dev
 3d-painting.com
@@ -204,6 +207,7 @@ acceptwe.us
 acclaimwe.us
 accordwe.us
 accreditedwe.us
+acentri.com
 achievementwe.us
 achievewe.us
 acornwe.us
@@ -256,6 +260,7 @@ affordablewe.us
 afia.pro
 afrobacon.com
 afterhourswe.us
+ag.us.to
 agedmail.com
 agendawe.us
 agger.ro
@@ -363,6 +368,8 @@ anonymousness.com
 anotherdomaincyka.tk
 ansibleemail.com
 anthony-junkmail.com
+antichef.com
+antichef.net
 antireg.com
 antireg.ru
 antispam.de
@@ -415,6 +422,7 @@ autorobotica.com
 autosouvenir39.ru
 autotwollow.com
 autowb.com
+aver.com
 averdov.com
 avia-tonic.fr
 avls.pt
@@ -449,6 +457,7 @@ barryogorman.com
 bartdevos.be
 basscode.org
 bauwerke-online.com
+baxomale.ht.cx
 bazaaboom.com
 bbbbyyzz.info
 bbhost.us
@@ -598,6 +607,7 @@ byespm.com
 byom.de
 c01.kr
 c1ph3r.xyz
+c2.hu
 c4.fr
 c51vsgq.com
 caainpt.com
@@ -612,6 +622,7 @@ cantozil.com
 capitalistdilemma.com
 car101.pro
 carbtc.net
+card.zp.ua
 cars2.club
 carsencyclopedia.com
 cartelera.org
@@ -717,11 +728,13 @@ confmin.com
 consumerriot.com
 contbay.com
 cooh-2.site
+cool.fr.nf
 coolandwacky.us
 coolimpool.org
 copyhome.win
 coreclip.com
 cosmorph.com
+courriel.fr.nf
 courrieltemporaire.com
 coza.ro
 cpc.cx
@@ -838,6 +851,7 @@ dev-null.ml
 developermail.com
 devnullmail.com
 deyom.com
+dfgh.net
 dharmatel.net
 dhm.ro
 dhy.cc
@@ -883,6 +897,7 @@ disposable.ml
 disposable.site
 disposableaddress.com
 disposableemailaddresses.com
+disposableemailaddresses.emailmiser.com
 disposableinbox.com
 disposablemails.com
 dispose.it
@@ -896,6 +911,7 @@ divismail.ru
 diwaq.com
 dldweb.info
 dlemail.ru
+dm.w3internet.co.uk
 dmarc.ro
 dndent.com
 dnses.ro
@@ -1085,6 +1101,7 @@ emailto.de
 emailure.net
 emailvb.pro
 emailwarden.com
+emailx.at.hm
 emailxfer.com
 emailz.cf
 emailz.ga
@@ -1093,6 +1110,7 @@ emailz.ml
 emeil.in
 emeil.ir
 emeraldwebmail.com
+emil.com
 emkei.cf
 emkei.ga
 emkei.gq
@@ -1469,6 +1487,7 @@ gothere.biz
 gotmail.com
 gotmail.net
 gotmail.org
+gotti.otherinbox.com
 gowikibooks.com
 gowikicampus.com
 gowikicars.com
@@ -1628,6 +1647,7 @@ humaility.com
 hungpackage.com
 hunnur.com
 hushmail.cf
+hushmail.com
 huskion.net
 hvastudiesucces.nl
 hwsye.net
@@ -1791,6 +1811,7 @@ jellyrolls.com
 jeoce.com
 jet-renovation.fr
 jetable.com
+jetable.fr.nf
 jetable.net
 jetable.org
 jetable.pp.ua
@@ -1953,6 +1974,7 @@ last-chance.pro
 laste.ml
 lastmail.co
 lastmail.com
+lavabit.com
 lawlita.com
 laxex.ru
 laxex.store
@@ -2011,6 +2033,7 @@ logsmarter.net
 logular.com
 loh.pp.ua
 loin.in
+lol.ovpn.to
 lolfreak.net
 lolmail.biz
 lookugly.com
@@ -2063,7 +2086,9 @@ mail-temporaire.com
 mail-temporaire.fr
 mail-tester.com
 mail.by
+mail.mezimages.net
 mail.wtf
+mail.zp.ua
 mail0.ga
 mail1.top
 mail114.net
@@ -2269,6 +2294,7 @@ mebelnu.info
 mechanicalresumes.com
 medkabinet-uzi.ru
 meepsheep.eu
+mega.zik.dj
 megasend.org
 mehr-bitcoin.de
 meidecn.com
@@ -2345,7 +2371,10 @@ momentics.ru
 monachat.tk
 monadi.ml
 monchu.fr
+moncourrier.fr.nf
+monemail.fr.nf
 moneypipe.net
+monmail.fr.nf
 monumentmail.com
 moolee.net
 moonapps.org
@@ -2401,6 +2430,7 @@ my-pomsies.ru
 my-teddyy.ru
 my10minutemail.com
 mybitti.de
+mycard.net.ua
 mycleaninbox.net
 mycorneroftheinter.net
 myde.ml
@@ -2478,6 +2508,7 @@ netricity.nl
 netris.net
 netviewer-france.com
 netzidiot.de
+neverbox.com
 nevermail.de
 newbpotato.tk
 newfilm24.ru
@@ -2524,6 +2555,7 @@ nolemail.ga
 nomail.cf
 nomail.ga
 nomail.pw
+nomail.xl.cx
 nomail2me.com
 nomorespamemails.com
 nongnue.com
@@ -2535,8 +2567,10 @@ noreply.fr
 nori24.tv
 norseforce.com
 norwegischlernen.info
+nospam.ze.tc
 nospam4.us
 nospamfor.us
+nospammail.net
 nospamthanks.info
 nothingtoseehere.ca
 notif.me
@@ -2555,6 +2589,7 @@ nubescontrol.com
 nullbox.info
 nuox.eu.org
 nurfuerspam.de
+nus.edu.sg
 nut.cc
 nutpa.net
 nuts2trade.com
@@ -2675,6 +2710,7 @@ patonce.com
 pavilionx2.com
 payperex2.com
 payspun.com
+pcusers.otherinbox.com
 pe.hu
 pecinan.com
 pecinan.net
@@ -2721,6 +2757,7 @@ ploae.com
 ploki.fr
 ploncy.com
 plw.me
+poczta.onet.pl
 poehali-otdihat.ru
 pofmagic.com
 pojok.ml
@@ -2822,6 +2859,7 @@ qmrbe.com
 qodiq.com
 qoika.com
 qopow.com
+qq.com
 qq.my
 qsl.ro
 qtum-ico.com
@@ -2872,6 +2910,7 @@ receiveee.com
 recipeforfailure.com
 recode.me
 reconmail.com
+recursor.net
 recyclemail.dk
 redfeathercrow.com
 reftoken.net
@@ -2950,6 +2989,7 @@ sabrestlouis.com
 sackboii.com
 saeoil.com
 safaat.cf
+safe-mail.net
 safermail.info
 safersignup.de
 safetymail.info
@@ -3029,6 +3069,7 @@ shitaway.tk
 shitmail.de
 shitmail.me
 shitmail.org
+shitware.nl
 shmeriously.com
 shopxda.com
 shortmail.net
@@ -3038,6 +3079,7 @@ shrib.com
 shut.name
 shut.ws
 siberpay.com
+sibmail.com
 sidelka-mytischi.ru
 sidement.com
 siftportal.ru
@@ -3103,8 +3145,10 @@ snakebutt.com
 snakemail.com
 snapmail.cc
 snapwet.com
+sneakemail.com
 sneakmail.de
 snece.com
+snkmail.com
 social-mailer.tk
 socialfurry.org
 sociallymediocre.com
@@ -3117,6 +3161,7 @@ softkey-office.ru
 softpls.asia
 sogetthis.com
 sohai.ml
+sohu.com
 sohus.cn
 soioa.com
 soisz.com
@@ -3154,6 +3199,8 @@ spambox.info
 spambox.me
 spambox.org
 spambox.us
+spamcannon.com
+spamcannon.net
 spamcero.com
 spamcon.org
 spamcorptastic.com
@@ -3177,6 +3224,9 @@ spamfree24.info
 spamfree24.net
 spamfree24.org
 spamgoes.in
+spamgourmet.com
+spamgourmet.net
+spamgourmet.org
 spamherelots.com
 spamhereplease.com
 spamhole.com
@@ -3207,6 +3257,7 @@ spamwc.cf
 spamwc.ga
 spamwc.gq
 spamwc.ml
+speed.1s.fr
 speedgaus.net
 sperma.cf
 spicysoda.com
@@ -3336,6 +3387,8 @@ temp-mail.org
 temp-mail.pp.ua
 temp-mail.ru
 temp-mails.com
+temp.emeraldwebmail.com
+temp.headstrong.de
 tempail.com
 tempalias.com
 tempe-mail.com
@@ -3347,6 +3400,7 @@ tempinbox.co.uk
 tempinbox.com
 tempmail.cn
 tempmail.co
+tempmail.com
 tempmail.de
 tempmail.eu
 tempmail.it
@@ -3619,6 +3673,7 @@ usa.cc
 usako.net
 usbc.be
 used-product.fr
+username.e4ward.com
 ushijima1129.cf
 ushijima1129.ga
 ushijima1129.gq
@@ -3744,6 +3799,7 @@ walkmail.net
 walkmail.ru
 wallm.com
 wanko.be
+wasteland.rfc822.org
 watch-harry-potter.com
 watchever.biz
 watchfull.net
@@ -3812,6 +3868,7 @@ whatpaas.com
 whatsaas.com
 whiffles.org
 whopy.com
+whtjddn.33mail.com
 whyspam.me
 wibblesmith.com
 wickmail.net
@@ -3862,6 +3919,7 @@ wwwnew.eu
 wxnw.net
 wzofit.com
 x-lab.net
+x.ip6.li
 x24.com
 xagloo.co
 xagloo.com
@@ -3886,6 +3944,7 @@ xn--d-bga.net
 xojxe.com
 xost.us
 xoxox.cc
+xoxy.net
 xperiae5.com
 xrap.de
 xrho.com
@@ -3909,6 +3968,8 @@ xzsok.com
 yabai-oppai.tk
 yabes.ovh
 yahmail.top
+yahoo.com.ph
+yahoo.com.vn
 yahooproduct.net
 yamail.win
 yanet.me
@@ -3919,6 +3980,7 @@ yarnpedia.ga
 ycare.de
 ycn.ro
 ye.vc
+yeah.net
 yecp.ru
 yecp.store
 yedi.org
@@ -3970,6 +4032,7 @@ z-o-e-v-a.ru
 z0d.eu
 z1p.biz
 z86.ru
+za.com
 zain.site
 zainmax.net
 zaktouni.fr
@@ -4019,4 +4082,3 @@ zyns.com
 zzi.us
 zzrgg.com
 zzz.com
-tempmail.com
