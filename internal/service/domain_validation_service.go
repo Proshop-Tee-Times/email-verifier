@@ -18,6 +18,8 @@ func NewConcurrentDomainValidationService(validator DomainValidator) *Concurrent
 }
 
 // ValidateDomainConcurrently runs domain validation checks concurrently
+// For email validation, domain_exists is derived from MX records (or A record fallback per RFC 5321).
+// A domain "exists" for email purposes if it can receive email, not if it has an A record.
 func (s *ConcurrentDomainValidationService) ValidateDomainConcurrently(ctx context.Context, domain string) (exists, hasMX, isDisposable bool) {
 	// Check if context is already done before starting
 	select {
@@ -36,7 +38,7 @@ func (s *ConcurrentDomainValidationService) ValidateDomainConcurrently(ctx conte
 		isValid        bool
 	}, 3)
 
-	// Run domain existence check
+	// Run A record check (used as fallback for domain existence per RFC 5321)
 	go func() {
 		defer wg.Done()
 		select {
@@ -44,7 +46,7 @@ func (s *ConcurrentDomainValidationService) ValidateDomainConcurrently(ctx conte
 			results <- struct {
 				validationType string
 				isValid        bool
-			}{"domain_exists", false}
+			}{"has_a_record", false}
 		default:
 			isValid := s.domainValidator.ValidateDomain(domain)
 			// Check context again after validation
@@ -53,12 +55,12 @@ func (s *ConcurrentDomainValidationService) ValidateDomainConcurrently(ctx conte
 				results <- struct {
 					validationType string
 					isValid        bool
-				}{"domain_exists", false}
+				}{"has_a_record", false}
 			default:
 				results <- struct {
 					validationType string
 					isValid        bool
-				}{"domain_exists", isValid}
+				}{"has_a_record", isValid}
 			}
 		}
 	}()
@@ -124,10 +126,11 @@ func (s *ConcurrentDomainValidationService) ValidateDomainConcurrently(ctx conte
 	}()
 
 	// Collect validation results
+	var hasARecord bool
 	for result := range results {
 		switch result.validationType {
-		case "domain_exists":
-			exists = result.isValid
+		case "has_a_record":
+			hasARecord = result.isValid
 		case "mx_records":
 			hasMX = result.isValid
 		case "is_disposable":
@@ -140,6 +143,9 @@ func (s *ConcurrentDomainValidationService) ValidateDomainConcurrently(ctx conte
 	case <-ctx.Done():
 		return false, false, false
 	default:
+		// domain_exists for email purposes means: has MX records OR has A record (RFC 5321 fallback)
+		// This fixes the bug where a domain with MX but no A record was marked as non-existent
+		exists = hasMX || hasARecord
 		return exists, hasMX, isDisposable
 	}
 }

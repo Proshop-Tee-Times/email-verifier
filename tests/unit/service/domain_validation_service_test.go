@@ -36,7 +36,7 @@ func TestConcurrentDomainValidationService_ValidateDomainConcurrently(t *testing
 			expectedDispose: false,
 		},
 		{
-			name:    "Domain does not exist",
+			name:    "Domain does not exist - no MX and no A record",
 			domain:  "nonexistent.com",
 			timeout: 5 * time.Second,
 			setup: func(mv *mocks.MockDomainValidator) {
@@ -71,6 +71,32 @@ func TestConcurrentDomainValidationService_ValidateDomainConcurrently(t *testing
 				mv.On("IsDisposable", "slow.com").After(10 * time.Millisecond).Return(false)
 			},
 			expectedExists:  false,
+			expectedHasMX:   false,
+			expectedDispose: false,
+		},
+		{
+			name:    "MX records exist but no A record - domain exists for email (RFC 5321)",
+			domain:  "mx-only.com",
+			timeout: 5 * time.Second,
+			setup: func(mv *mocks.MockDomainValidator) {
+				mv.On("ValidateDomain", "mx-only.com").Return(false)   // No A record
+				mv.On("ValidateMXRecords", "mx-only.com").Return(true) // Has MX
+				mv.On("IsDisposable", "mx-only.com").Return(false)
+			},
+			expectedExists:  true, // Should be true because MX exists
+			expectedHasMX:   true,
+			expectedDispose: false,
+		},
+		{
+			name:    "A record exists but no MX records - domain exists via fallback (RFC 5321)",
+			domain:  "a-only.com",
+			timeout: 5 * time.Second,
+			setup: func(mv *mocks.MockDomainValidator) {
+				mv.On("ValidateDomain", "a-only.com").Return(true)     // Has A record
+				mv.On("ValidateMXRecords", "a-only.com").Return(false) // No MX
+				mv.On("IsDisposable", "a-only.com").Return(false)
+			},
+			expectedExists:  true, // Should be true because A record exists (fallback)
 			expectedHasMX:   false,
 			expectedDispose: false,
 		},
