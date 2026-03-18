@@ -2,6 +2,7 @@
 package servicetest
 
 import (
+	"errors"
 	"testing"
 
 	"emailvalidator/internal/model"
@@ -45,12 +46,12 @@ func (m *MockEmailValidator) DetectAlias(email string) string {
 }
 
 // ValidateDomain implements the validator.EmailValidator interface
-func (m *MockEmailValidator) ValidateDomain(domain string) bool {
+func (m *MockEmailValidator) ValidateDomain(domain string) (bool, error) {
 	return m.MockDomainValidator.ValidateDomain(domain)
 }
 
 // ValidateMXRecords implements the validator.EmailValidator interface
-func (m *MockEmailValidator) ValidateMXRecords(domain string) bool {
+func (m *MockEmailValidator) ValidateMXRecords(domain string) (bool, error) {
 	return m.MockDomainValidator.ValidateMXRecords(domain)
 }
 
@@ -59,13 +60,19 @@ func (m *MockEmailValidator) IsDisposable(domain string) bool {
 	return m.MockDomainValidator.IsDisposable(domain)
 }
 
+// CacheDomainResult implements the validator.EmailValidator interface
+func (m *MockEmailValidator) CacheDomainResult(domain string, hasARecord, hasMX bool) {
+	m.MockDomainValidator.CacheDomainResult(domain, hasARecord, hasMX)
+}
+
 // Test cases
 func TestEmailService_ValidateEmail(t *testing.T) {
 	tests := []struct {
-		name     string
-		email    string
-		setup    func(*mocks.MockEmailRuleValidator, *mocks.MockDomainValidationService, *mocks.MockMetricsCollector)
-		expected model.EmailValidationResponse
+		name        string
+		email       string
+		setup       func(*mocks.MockEmailRuleValidator, *mocks.MockDomainValidationService, *mocks.MockMetricsCollector)
+		expected    model.EmailValidationResponse
+		expectError bool
 	}{
 		{
 			name:  "Empty email",
@@ -96,23 +103,31 @@ func TestEmailService_ValidateEmail(t *testing.T) {
 				rv.On("IsRoleBased", "test@example.com").Return(false)
 				rv.On("DetectAlias", "test@example.com").Return("")
 				rv.On("GetTypoSuggestions", "test@example.com").Return([]string{})
-				dv.On("ValidateDomainConcurrently", mock.Anything, "example.com").Return(true, true, false)
+				dv.On("ValidateDomainConcurrently", mock.Anything, "example.com").Return(true, true, false, nil)
 				rv.On("CalculateScore", mock.Anything).Return(95)
 				mc.On("RecordValidationScore", "overall", float64(95))
 			},
 			expected: model.EmailValidationResponse{
 				Email: "test@example.com",
 				Validations: model.ValidationResults{
-					Syntax:        true,
-					DomainExists:  true,
-					MXRecords:     true,
-					IsDisposable:  false,
-					IsRoleBased:   false,
-					MailboxExists: true,
+					Syntax:       true,
+					DomainExists: true,
+					MXRecords:    true,
+					IsDisposable: false,
+					IsRoleBased:  false,
 				},
 				Score:  95,
 				Status: model.ValidationStatusValid,
 			},
+		},
+		{
+			name:  "DNS lookup failure excludes result",
+			email: "test@flaky-dns.com",
+			setup: func(rv *mocks.MockEmailRuleValidator, dv *mocks.MockDomainValidationService, mc *mocks.MockMetricsCollector) {
+				rv.On("ValidateSyntax", "test@flaky-dns.com").Return(true)
+				dv.On("ValidateDomainConcurrently", mock.Anything, "flaky-dns.com").Return(false, false, false, errors.New("DNS lookup failed"))
+			},
+			expectError: true,
 		},
 	}
 
@@ -140,13 +155,17 @@ func TestEmailService_ValidateEmail(t *testing.T) {
 			svc.SetMetricsCollector(mockMetricsCollector)
 
 			// Execute
-			result := svc.ValidateEmail(tt.email)
+			result, err := svc.ValidateEmail(tt.email)
 
-			// Assert
-			assert.Equal(t, tt.expected.Email, result.Email)
-			assert.Equal(t, tt.expected.Status, result.Status)
-			assert.Equal(t, tt.expected.Score, result.Score)
-			assert.Equal(t, tt.expected.Validations, result.Validations)
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.expected.Email, result.Email)
+				assert.Equal(t, tt.expected.Status, result.Status)
+				assert.Equal(t, tt.expected.Score, result.Score)
+				assert.Equal(t, tt.expected.Validations, result.Validations)
+			}
 
 			// Verify mocks
 			mockRuleValidator.AssertExpectations(t)

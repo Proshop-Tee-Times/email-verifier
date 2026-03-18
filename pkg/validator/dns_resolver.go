@@ -1,9 +1,23 @@
 package validator
 
 import (
+	"fmt"
 	"net"
 	"time"
 )
+
+// dnsTimeoutError represents a DNS lookup timeout
+type dnsTimeoutError struct {
+	domain string
+	kind   string
+}
+
+func (e *dnsTimeoutError) Error() string {
+	return fmt.Sprintf("DNS %s lookup timed out for %s", e.kind, e.domain)
+}
+
+func (e *dnsTimeoutError) Timeout() bool   { return true }
+func (e *dnsTimeoutError) Temporary() bool { return true }
 
 // DNSResolver interface for making DNS lookups configurable and mockable
 type DNSResolver interface {
@@ -37,7 +51,7 @@ func (r *DefaultResolver) LookupHost(domain string) ([]string, error) {
 	case err := <-errChan:
 		return nil, err
 	case <-time.After(r.timeout):
-		return nil, net.ErrClosed
+		return nil, &dnsTimeoutError{domain: domain, kind: "host"}
 	}
 }
 
@@ -62,6 +76,6 @@ func (r *DefaultResolver) LookupMX(domain string) ([]*net.MX, error) {
 	case err := <-errChan:
 		return nil, err
 	case <-time.After(r.timeout):
-		return nil, net.ErrClosed
+		return nil, &dnsTimeoutError{domain: domain, kind: "MX"}
 	}
 }

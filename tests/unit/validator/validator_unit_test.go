@@ -230,36 +230,33 @@ func TestCalculateScore(t *testing.T) {
 		{
 			name: "All validations pass",
 			validations: map[string]bool{
-				"syntax":         true,
-				"domain_exists":  true,
-				"mx_records":     true,
-				"mailbox_exists": true,
-				"is_disposable":  false,
-				"is_role_based":  false,
+				"syntax":        true,
+				"domain_exists": true,
+				"mx_records":    true,
+				"is_disposable": false,
+				"is_role_based": false,
 			},
 			want: 100,
 		},
 		{
 			name: "Only syntax valid",
 			validations: map[string]bool{
-				"syntax":         true,
-				"domain_exists":  false,
-				"mx_records":     false,
-				"mailbox_exists": false,
-				"is_disposable":  true,
-				"is_role_based":  true,
+				"syntax":        true,
+				"domain_exists": false,
+				"mx_records":    false,
+				"is_disposable": true,
+				"is_role_based": true,
 			},
-			want: 20,
+			want: 25,
 		},
 		{
 			name: "Role-based email",
 			validations: map[string]bool{
-				"syntax":         true,
-				"domain_exists":  true,
-				"mx_records":     true,
-				"mailbox_exists": true,
-				"is_disposable":  false,
-				"is_role_based":  true,
+				"syntax":        true,
+				"domain_exists": true,
+				"mx_records":    true,
+				"is_disposable": false,
+				"is_role_based": true,
 			},
 			want: 90,
 		},
@@ -390,25 +387,34 @@ func TestDomainValidation(t *testing.T) {
 
 			mockResolver.delay = tt.setupDelay
 
-			exists := validator.ValidateDomain(tt.domain)
+			exists, err := validator.ValidateDomain(tt.domain)
+			if err != nil {
+				t.Fatalf("ValidateDomain(%q) returned unexpected error: %v", tt.domain, err)
+			}
 			if exists != tt.wantExists {
 				t.Errorf("ValidateDomain(%q) = %v, want %v", tt.domain, exists, tt.wantExists)
 			}
 
-			mxExists := validator.ValidateMXRecords(tt.domain)
+			mxExists, err := validator.ValidateMXRecords(tt.domain)
+			if err != nil {
+				t.Fatalf("ValidateMXRecords(%q) returned unexpected error: %v", tt.domain, err)
+			}
 			if mxExists != tt.wantMXRecords {
 				t.Errorf("ValidateMXRecords(%q) = %v, want %v", tt.domain, mxExists, tt.wantMXRecords)
 			}
 
-			if tt.checkCache {
-				// Force a small delay to ensure the first result is cached
-				time.Sleep(time.Millisecond * 10)
+			// Cache the results (simulates what ConcurrentDomainValidationService does)
+			validator.CacheDomainResult(tt.domain, exists, mxExists)
 
+			if tt.checkCache {
 				// Set a long delay that would fail the test if the cache wasn't used
 				mockResolver.delay = time.Second
 
 				start := time.Now()
-				exists = validator.ValidateDomain(tt.domain)
+				exists, err = validator.ValidateDomain(tt.domain)
+				if err != nil {
+					t.Fatalf("Cached ValidateDomain(%q) returned unexpected error: %v", tt.domain, err)
+				}
 				duration := time.Since(start)
 
 				if duration > time.Millisecond*20 {
@@ -416,6 +422,21 @@ func TestDomainValidation(t *testing.T) {
 				}
 				if exists != tt.wantExists {
 					t.Errorf("Cached ValidateDomain(%q) = %v, want %v", tt.domain, exists, tt.wantExists)
+				}
+
+				// Also verify MX result is cached
+				start = time.Now()
+				mxExists, err = validator.ValidateMXRecords(tt.domain)
+				if err != nil {
+					t.Fatalf("Cached ValidateMXRecords(%q) returned unexpected error: %v", tt.domain, err)
+				}
+				duration = time.Since(start)
+
+				if duration > time.Millisecond*20 {
+					t.Errorf("Cached MX lookup took too long: %v, should be under 20ms", duration)
+				}
+				if mxExists != tt.wantMXRecords {
+					t.Errorf("Cached ValidateMXRecords(%q) = %v, want %v", tt.domain, mxExists, tt.wantMXRecords)
 				}
 			}
 		})
@@ -435,16 +456,27 @@ func TestCacheExpiration(t *testing.T) {
 
 	domain := "example.com"
 
-	exists := validator.ValidateDomain(domain)
+	exists, err := validator.ValidateDomain(domain)
+	if err != nil {
+		t.Fatalf("ValidateDomain returned unexpected error: %v", err)
+	}
 	if !exists {
 		t.Errorf("First check failed: domain should exist")
 	}
 
+	// Cache the result (simulates what ConcurrentDomainValidationService does)
+	validator.CacheDomainResult(domain, true, true)
+
+	// Wait for cache to expire
 	time.Sleep(time.Millisecond * 100)
 
+	// Change the mock to return false
 	mockResolver.validDomains[domain] = false
 
-	exists = validator.ValidateDomain(domain)
+	exists, err = validator.ValidateDomain(domain)
+	if err != nil {
+		t.Fatalf("ValidateDomain returned unexpected error: %v", err)
+	}
 	if exists {
 		t.Error("Got cached result after expiration")
 	}

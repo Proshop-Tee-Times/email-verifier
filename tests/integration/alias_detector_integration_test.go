@@ -54,7 +54,10 @@ func TestEmailServiceAliasDetection(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Validate the email
-			result := svc.ValidateEmail(tt.email)
+			result, err := svc.ValidateEmail(tt.email)
+			if err != nil {
+				t.Fatalf("ValidateEmail returned unexpected error: %v", err)
+			}
 
 			// Check if AliasOf field is set correctly
 			if tt.shouldHaveAlias {

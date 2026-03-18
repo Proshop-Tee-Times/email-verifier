@@ -225,9 +225,6 @@ components:
             mx_records:
               type: boolean
               description: Whether the domain has valid MX records
-            mailbox_exists:
-              type: boolean
-              description: Whether the mailbox exists
             is_disposable:
               type: boolean
               description: Whether the email is from a disposable provider

@@ -91,7 +91,10 @@ func TestNullMXRecord(t *testing.T) {
 	// Run the tests
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			result := domainValidator.ValidateMX(tc.domain)
+			result, err := domainValidator.ValidateMX(tc.domain)
+			if err != nil {
+				t.Fatalf("ValidateMX for %s returned unexpected error: %v", tc.domain, err)
+			}
 			if result != tc.expectedResult {
 				t.Errorf("ValidateMX for %s returned %v, expected %v",
 					tc.domain, result, tc.expectedResult)

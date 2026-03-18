@@ -87,7 +87,10 @@ func TestServiceValidateEmail(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := emailService.ValidateEmail(tt.email)
+			result, err := emailService.ValidateEmail(tt.email)
+			if err != nil {
+				t.Fatalf("ValidateEmail returned unexpected error: %v", err)
+			}
 
 			if result.Score != tt.wantScore {
 				t.Errorf("Score = %v, want %v", result.Score, tt.wantScore)
@@ -218,8 +221,8 @@ func TestServiceGetAPIStatus(t *testing.T) {
 	}
 
 	// Make some requests and check counter
-	emailService.ValidateEmail("test@example.com")
-	emailService.ValidateEmail("another@example.com")
+	_, _ = emailService.ValidateEmail("test@example.com")
+	_, _ = emailService.ValidateEmail("another@example.com")
 
 	status = emailService.GetAPIStatus()
 	if status.RequestsHandled != 2 {
@@ -278,7 +281,7 @@ func TestServiceParallelBatchValidation(t *testing.T) {
 		// Time sequential execution
 		start = time.Now()
 		for _, email := range emails {
-			emailService.ValidateEmail(email)
+			_, _ = emailService.ValidateEmail(email)
 		}
 		totalSequential += time.Since(start)
 	}
@@ -404,7 +407,10 @@ func TestServiceEmailValidationErrorScenarios(t *testing.T) {
 				tt.setupFunc()
 			}
 
-			result := emailService.ValidateEmail(tt.email)
+			result, err := emailService.ValidateEmail(tt.email)
+			if err != nil {
+				t.Fatalf("ValidateEmail returned unexpected error: %v", err)
+			}
 
 			if result.Status != tt.wantStatus {
 				t.Errorf("Status = %v, want %v", result.Status, tt.wantStatus)

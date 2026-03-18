@@ -19,12 +19,11 @@ const (
 
 // ValidationResults represents the results of various validation checks
 type ValidationResults struct {
-	Syntax        bool `json:"syntax"`
-	DomainExists  bool `json:"domain_exists"`
-	MXRecords     bool `json:"mx_records"`
-	MailboxExists bool `json:"mailbox_exists"`
-	IsDisposable  bool `json:"is_disposable"`
-	IsRoleBased   bool `json:"is_role_based"`
+	Syntax       bool `json:"syntax"`
+	DomainExists bool `json:"domain_exists"`
+	MXRecords    bool `json:"mx_records"`
+	IsDisposable bool `json:"is_disposable"`
+	IsRoleBased  bool `json:"is_role_based"`
 }
 
 // EmailValidationRequest represents a request to validate a single email

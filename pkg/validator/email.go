@@ -95,14 +95,22 @@ func (v *EmailValidator) ValidateSyntax(email string) bool {
 	return v.syntaxValidator.Validate(email)
 }
 
-// ValidateDomain checks if the domain exists
-func (v *EmailValidator) ValidateDomain(domain string) bool {
+// ValidateDomain checks if the domain exists.
+// Returns (exists, error). A non-nil error indicates a transient DNS failure.
+func (v *EmailValidator) ValidateDomain(domain string) (bool, error) {
 	return v.domainValidator.Validate(domain)
 }
 
-// ValidateMXRecords checks if the domain has valid MX records
-func (v *EmailValidator) ValidateMXRecords(domain string) bool {
+// ValidateMXRecords checks if the domain has valid MX records.
+// Returns (hasMX, error). A non-nil error indicates a transient DNS failure.
+func (v *EmailValidator) ValidateMXRecords(domain string) (bool, error) {
 	return v.domainValidator.ValidateMX(domain)
+}
+
+// CacheDomainResult stores both A record and MX results for a domain.
+// Only call this when both lookups succeeded without transient errors.
+func (v *EmailValidator) CacheDomainResult(domain string, hasARecord, hasMX bool) {
+	v.domainValidator.CacheDomainResult(domain, hasARecord, hasMX)
 }
 
 // IsDisposable checks if the email domain is from a disposable email provider
@@ -119,12 +127,11 @@ func (v *EmailValidator) IsRoleBased(email string) bool {
 func (v *EmailValidator) CalculateScore(validations map[string]bool) int {
 	score := 0
 	weights := map[string]int{
-		"syntax":         20,
-		"domain_exists":  20,
-		"mx_records":     20,
-		"mailbox_exists": 20,
-		"is_disposable":  10,
-		"is_role_based":  10,
+		"syntax":        25,
+		"domain_exists": 25,
+		"mx_records":    30,
+		"is_disposable": 10,
+		"is_role_based": 10,
 	}
 
 	for check, weight := range weights {

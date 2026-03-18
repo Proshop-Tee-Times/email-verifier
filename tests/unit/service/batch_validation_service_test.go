@@ -2,6 +2,7 @@
 package servicetest
 
 import (
+	"errors"
 	"testing"
 
 	"emailvalidator/internal/model"
@@ -36,7 +37,7 @@ func TestBatchValidationService_ValidateEmails(t *testing.T) {
 				rv.On("IsRoleBased", "test@example.com").Return(false)
 				rv.On("DetectAlias", "test@example.com").Return("")
 				rv.On("GetTypoSuggestions", "test@example.com").Return([]string{})
-				dv.On("ValidateDomainConcurrently", mock.Anything, "example.com").Return(true, true, false)
+				dv.On("ValidateDomainConcurrently", mock.Anything, "example.com").Return(true, true, false, nil)
 				rv.On("CalculateScore", mock.Anything).Return(95)
 				mc.On("RecordValidationScore", "overall", float64(95))
 			},
@@ -45,12 +46,11 @@ func TestBatchValidationService_ValidateEmails(t *testing.T) {
 					{
 						Email: "test@example.com",
 						Validations: model.ValidationResults{
-							Syntax:        true,
-							DomainExists:  true,
-							MXRecords:     true,
-							IsDisposable:  false,
-							IsRoleBased:   false,
-							MailboxExists: true,
+							Syntax:       true,
+							DomainExists: true,
+							MXRecords:    true,
+							IsDisposable: false,
+							IsRoleBased:  false,
 						},
 						Score:  95,
 						Status: model.ValidationStatusValid,
@@ -66,7 +66,7 @@ func TestBatchValidationService_ValidateEmails(t *testing.T) {
 				rv.On("IsRoleBased", "test@gmial.com").Return(false)
 				rv.On("DetectAlias", "test@gmial.com").Return("")
 				rv.On("GetTypoSuggestions", "test@gmial.com").Return([]string{"test@gmail.com"})
-				dv.On("ValidateDomainConcurrently", mock.Anything, "gmial.com").Return(true, true, false)
+				dv.On("ValidateDomainConcurrently", mock.Anything, "gmial.com").Return(true, true, false, nil)
 				rv.On("CalculateScore", mock.Anything).Return(95)
 				mc.On("RecordValidationScore", "overall", float64(75)) // 95 - 20 (typo penalty)
 			},
@@ -75,12 +75,11 @@ func TestBatchValidationService_ValidateEmails(t *testing.T) {
 					{
 						Email: "test@gmial.com",
 						Validations: model.ValidationResults{
-							Syntax:        true,
-							DomainExists:  true,
-							MXRecords:     true,
-							IsDisposable:  false,
-							IsRoleBased:   false,
-							MailboxExists: true,
+							Syntax:       true,
+							DomainExists: true,
+							MXRecords:    true,
+							IsDisposable: false,
+							IsRoleBased:  false,
 						},
 						Score:          75, // 95 - 20 (typo penalty)
 						Status:         model.ValidationStatusProbablyValid,
@@ -106,7 +105,7 @@ func TestBatchValidationService_ValidateEmails(t *testing.T) {
 				rv.On("GetTypoSuggestions", "test2@example.com").Return([]string{})
 
 				// Domain validation (called once for the domain)
-				dv.On("ValidateDomainConcurrently", mock.Anything, "example.com").Return(true, true, false)
+				dv.On("ValidateDomainConcurrently", mock.Anything, "example.com").Return(true, true, false, nil)
 
 				// Score calculations
 				rv.On("CalculateScore", mock.Anything).Return(95).Times(2)
@@ -117,12 +116,11 @@ func TestBatchValidationService_ValidateEmails(t *testing.T) {
 					{
 						Email: "test1@example.com",
 						Validations: model.ValidationResults{
-							Syntax:        true,
-							DomainExists:  true,
-							MXRecords:     true,
-							IsDisposable:  false,
-							IsRoleBased:   false,
-							MailboxExists: true,
+							Syntax:       true,
+							DomainExists: true,
+							MXRecords:    true,
+							IsDisposable: false,
+							IsRoleBased:  false,
 						},
 						Score:  95,
 						Status: model.ValidationStatusValid,
@@ -130,12 +128,44 @@ func TestBatchValidationService_ValidateEmails(t *testing.T) {
 					{
 						Email: "test2@example.com",
 						Validations: model.ValidationResults{
-							Syntax:        true,
-							DomainExists:  true,
-							MXRecords:     true,
-							IsDisposable:  false,
-							IsRoleBased:   false,
-							MailboxExists: true,
+							Syntax:       true,
+							DomainExists: true,
+							MXRecords:    true,
+							IsDisposable: false,
+							IsRoleBased:  false,
+						},
+						Score:  95,
+						Status: model.ValidationStatusValid,
+					},
+				},
+			},
+		},
+		{
+			name:   "DNS failure excludes emails for that domain",
+			emails: []string{"good@example.com", "user@flaky.com", "user2@flaky.com"},
+			setup: func(rv *mocks.MockEmailRuleValidator, dv *mocks.MockDomainValidationService, mc *mocks.MockMetricsCollector) {
+				// good@example.com succeeds
+				rv.On("ValidateSyntax", "good@example.com").Return(true)
+				rv.On("IsRoleBased", "good@example.com").Return(false)
+				rv.On("DetectAlias", "good@example.com").Return("")
+				rv.On("GetTypoSuggestions", "good@example.com").Return([]string{})
+				dv.On("ValidateDomainConcurrently", mock.Anything, "example.com").Return(true, true, false, nil)
+				rv.On("CalculateScore", mock.Anything).Return(95)
+				mc.On("RecordValidationScore", "overall", float64(95))
+
+				// flaky.com DNS fails — both emails excluded
+				dv.On("ValidateDomainConcurrently", mock.Anything, "flaky.com").Return(false, false, false, errors.New("DNS timeout"))
+			},
+			expected: model.BatchValidationResponse{
+				Results: []model.EmailValidationResponse{
+					{
+						Email: "good@example.com",
+						Validations: model.ValidationResults{
+							Syntax:       true,
+							DomainExists: true,
+							MXRecords:    true,
+							IsDisposable: false,
+							IsRoleBased:  false,
 						},
 						Score:  95,
 						Status: model.ValidationStatusValid,

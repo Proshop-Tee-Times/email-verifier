@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"sync"
 )
 
@@ -17,51 +18,38 @@ func NewConcurrentDomainValidationService(validator DomainValidator) *Concurrent
 	}
 }
 
-// ValidateDomainConcurrently runs domain validation checks concurrently
-// For email validation, domain_exists is derived from MX records (or A record fallback per RFC 5321).
-// A domain "exists" for email purposes if it can receive email, not if it has an A record.
-func (s *ConcurrentDomainValidationService) ValidateDomainConcurrently(ctx context.Context, domain string) (exists, hasMX, isDisposable bool) {
+// domainResult holds the result of a single domain validation check
+type domainResult struct {
+	validationType string
+	isValid        bool
+	err            error
+}
+
+// ValidateDomainConcurrently runs domain validation checks concurrently.
+// Returns an error if any DNS lookup failed transiently (timeout, SERVFAIL, etc.).
+// Definitive results (NXDOMAIN) are not errors.
+func (s *ConcurrentDomainValidationService) ValidateDomainConcurrently(ctx context.Context, domain string) (exists, hasMX, isDisposable bool, err error) {
 	// Check if context is already done before starting
 	select {
 	case <-ctx.Done():
-		return false, false, false
+		return false, false, false, ctx.Err()
 	default:
-		// Continue with validation
 	}
 
 	var wg sync.WaitGroup
 	wg.Add(3)
 
-	// Channel for collecting validation results
-	results := make(chan struct {
-		validationType string
-		isValid        bool
-	}, 3)
+	results := make(chan domainResult, 3)
 
-	// Run A record check (used as fallback for domain existence per RFC 5321)
+	// Run A record check
 	go func() {
 		defer wg.Done()
 		select {
 		case <-ctx.Done():
-			results <- struct {
-				validationType string
-				isValid        bool
-			}{"has_a_record", false}
+			results <- domainResult{"has_a_record", false, ctx.Err()}
 		default:
-			isValid := s.domainValidator.ValidateDomain(domain)
-			// Check context again after validation
-			select {
-			case <-ctx.Done():
-				results <- struct {
-					validationType string
-					isValid        bool
-				}{"has_a_record", false}
-			default:
-				results <- struct {
-					validationType string
-					isValid        bool
-				}{"has_a_record", isValid}
-			}
+			isValid, lookupErr := s.domainValidator.ValidateDomain(domain)
+			results <- domainResult{"has_a_record", isValid, lookupErr}
 		}
 	}()
 
@@ -70,64 +58,38 @@ func (s *ConcurrentDomainValidationService) ValidateDomainConcurrently(ctx conte
 		defer wg.Done()
 		select {
 		case <-ctx.Done():
-			results <- struct {
-				validationType string
-				isValid        bool
-			}{"mx_records", false}
+			results <- domainResult{"mx_records", false, ctx.Err()}
 		default:
-			isValid := s.domainValidator.ValidateMXRecords(domain)
-			// Check context again after validation
-			select {
-			case <-ctx.Done():
-				results <- struct {
-					validationType string
-					isValid        bool
-				}{"mx_records", false}
-			default:
-				results <- struct {
-					validationType string
-					isValid        bool
-				}{"mx_records", isValid}
-			}
+			isValid, lookupErr := s.domainValidator.ValidateMXRecords(domain)
+			results <- domainResult{"mx_records", isValid, lookupErr}
 		}
 	}()
 
-	// Run disposable domain check
+	// Run disposable domain check (this is a local list lookup, never fails)
 	go func() {
 		defer wg.Done()
 		select {
 		case <-ctx.Done():
-			results <- struct {
-				validationType string
-				isValid        bool
-			}{"is_disposable", false}
+			results <- domainResult{"is_disposable", false, ctx.Err()}
 		default:
 			isValid := s.domainValidator.IsDisposable(domain)
-			// Check context again after validation
-			select {
-			case <-ctx.Done():
-				results <- struct {
-					validationType string
-					isValid        bool
-				}{"is_disposable", false}
-			default:
-				results <- struct {
-					validationType string
-					isValid        bool
-				}{"is_disposable", isValid}
-			}
+			results <- domainResult{"is_disposable", isValid, nil}
 		}
 	}()
 
-	// Close results channel after all goroutines complete
 	go func() {
 		wg.Wait()
 		close(results)
 	}()
 
-	// Collect validation results
+	// Collect results
 	var hasARecord bool
+	var errs []error
 	for result := range results {
+		if result.err != nil {
+			errs = append(errs, fmt.Errorf("%s: %w", result.validationType, result.err))
+			continue
+		}
 		switch result.validationType {
 		case "has_a_record":
 			hasARecord = result.isValid
@@ -138,14 +100,19 @@ func (s *ConcurrentDomainValidationService) ValidateDomainConcurrently(ctx conte
 		}
 	}
 
+	// If any DNS lookup had a transient failure, return an error — do not cache
+	if len(errs) > 0 {
+		return false, false, false, fmt.Errorf("DNS lookup failed for %s: %w", domain, errs[0])
+	}
+
 	// Final check if context was canceled
 	select {
 	case <-ctx.Done():
-		return false, false, false
+		return false, false, false, ctx.Err()
 	default:
-		// domain_exists for email purposes means: has MX records OR has A record (RFC 5321 fallback)
-		// This fixes the bug where a domain with MX but no A record was marked as non-existent
+		// Both DNS lookups succeeded — cache the combined result
+		s.domainValidator.CacheDomainResult(domain, hasARecord, hasMX)
 		exists = hasMX || hasARecord
-		return exists, hasMX, isDisposable
+		return exists, hasMX, isDisposable, nil
 	}
 }

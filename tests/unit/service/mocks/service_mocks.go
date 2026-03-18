@@ -42,14 +42,14 @@ type MockDomainValidator struct {
 	mock.Mock
 }
 
-func (m *MockDomainValidator) ValidateDomain(domain string) bool {
+func (m *MockDomainValidator) ValidateDomain(domain string) (bool, error) {
 	args := m.Called(domain)
-	return args.Bool(0)
+	return args.Bool(0), args.Error(1)
 }
 
-func (m *MockDomainValidator) ValidateMXRecords(domain string) bool {
+func (m *MockDomainValidator) ValidateMXRecords(domain string) (bool, error) {
 	args := m.Called(domain)
-	return args.Bool(0)
+	return args.Bool(0), args.Error(1)
 }
 
 func (m *MockDomainValidator) IsDisposable(domain string) bool {
@@ -57,14 +57,18 @@ func (m *MockDomainValidator) IsDisposable(domain string) bool {
 	return args.Bool(0)
 }
 
+func (m *MockDomainValidator) CacheDomainResult(domain string, hasARecord, hasMX bool) {
+	m.Called(domain, hasARecord, hasMX)
+}
+
 // MockDomainValidationService mocks the DomainValidationService interface
 type MockDomainValidationService struct {
 	mock.Mock
 }
 
-func (m *MockDomainValidationService) ValidateDomainConcurrently(ctx context.Context, domain string) (exists, hasMX, isDisposable bool) {
+func (m *MockDomainValidationService) ValidateDomainConcurrently(ctx context.Context, domain string) (exists, hasMX, isDisposable bool, err error) {
 	args := m.Called(ctx, domain)
-	return args.Bool(0), args.Bool(1), args.Bool(2)
+	return args.Bool(0), args.Bool(1), args.Bool(2), args.Error(3)
 }
 
 // MockMetricsCollector mocks the MetricsCollector interface

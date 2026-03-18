@@ -51,19 +51,18 @@ func NewEmailServiceWithCache(redisCache cache.Cache) (*EmailService, error) {
 	}, nil
 }
 
-// NewEmailServiceWithDeps creates a new instance of EmailService with custom dependencies
-// This is primarily used for testing
+// NewEmailServiceWithDeps creates a new instance of EmailService with custom dependencies.
+// The validator must implement both EmailRuleValidator and DomainValidator interfaces.
+// This is primarily used for testing.
 func NewEmailServiceWithDeps(validator interface{}) *EmailService {
-	// Type assertion to get the required interfaces
-	var emailRuleValidator EmailRuleValidator
-	var domainValidator DomainValidator
+	emailRuleValidator, _ := validator.(EmailRuleValidator)
+	domainValidator, _ := validator.(DomainValidator)
 
-	// Try to cast to the required interfaces
-	if v, ok := validator.(EmailRuleValidator); ok {
-		emailRuleValidator = v
+	if emailRuleValidator == nil {
+		panic("validator must implement EmailRuleValidator interface")
 	}
-	if v, ok := validator.(DomainValidator); ok {
-		domainValidator = v
+	if domainValidator == nil {
+		panic("validator must implement DomainValidator interface")
 	}
 
 	metricsAdapter := NewMetricsAdapter()
@@ -80,8 +79,10 @@ func NewEmailServiceWithDeps(validator interface{}) *EmailService {
 	}
 }
 
-// ValidateEmail performs all validation checks on a single email
-func (s *EmailService) ValidateEmail(email string) model.EmailValidationResponse {
+// ValidateEmail performs all validation checks on a single email.
+// Returns an error if domain DNS lookups failed transiently — the caller
+// should treat this as "unable to validate" rather than "invalid".
+func (s *EmailService) ValidateEmail(email string) (model.EmailValidationResponse, error) {
 	atomic.AddInt64(&s.requests, 1)
 
 	response := model.EmailValidationResponse{
@@ -91,33 +92,35 @@ func (s *EmailService) ValidateEmail(email string) model.EmailValidationResponse
 
 	if email == "" {
 		response.Status = model.ValidationStatusMissingEmail
-		return response
+		return response, nil
 	}
 
 	// Validate syntax first
 	response.Validations.Syntax = s.emailRuleValidator.ValidateSyntax(email)
 	if !response.Validations.Syntax {
 		response.Status = model.ValidationStatusInvalidFormat
-		return response
+		return response, nil
 	}
 
 	// Extract domain and validate
 	parts := strings.Split(email, "@")
 	if len(parts) != 2 {
 		response.Status = model.ValidationStatusInvalidFormat
-		return response
+		return response, nil
 	}
 	domain := parts[1]
 
 	// Perform domain validations concurrently
-	exists, hasMX, isDisposable := s.domainValidationSvc.ValidateDomainConcurrently(context.Background(), domain)
+	exists, hasMX, isDisposable, err := s.domainValidationSvc.ValidateDomainConcurrently(context.Background(), domain)
+	if err != nil {
+		return response, err
+	}
 
 	// Set validation results
 	response.Validations.DomainExists = exists
 	response.Validations.MXRecords = hasMX
 	response.Validations.IsDisposable = isDisposable
 	response.Validations.IsRoleBased = s.emailRuleValidator.IsRoleBased(email)
-	response.Validations.MailboxExists = hasMX
 
 	// Always check for typo suggestions
 	suggestions := s.emailRuleValidator.GetTypoSuggestions(email)
@@ -132,12 +135,11 @@ func (s *EmailService) ValidateEmail(email string) model.EmailValidationResponse
 
 	// Calculate score
 	validationMap := map[string]bool{
-		"syntax":         response.Validations.Syntax,
-		"domain_exists":  response.Validations.DomainExists,
-		"mx_records":     response.Validations.MXRecords,
-		"mailbox_exists": response.Validations.MailboxExists,
-		"is_disposable":  response.Validations.IsDisposable,
-		"is_role_based":  response.Validations.IsRoleBased,
+		"syntax":        response.Validations.Syntax,
+		"domain_exists": response.Validations.DomainExists,
+		"mx_records":    response.Validations.MXRecords,
+		"is_disposable": response.Validations.IsDisposable,
+		"is_role_based": response.Validations.IsRoleBased,
 	}
 	response.Score = s.emailRuleValidator.CalculateScore(validationMap)
 
@@ -146,16 +148,14 @@ func (s *EmailService) ValidateEmail(email string) model.EmailValidationResponse
 		response.Score = max(0, response.Score-20) // Ensure score doesn't go below 0
 	}
 
-	// Record validation score
-	s.metricsCollector.RecordValidationScore("overall", float64(response.Score))
-
 	// Set status based on validations
 	switch {
 	case !response.Validations.DomainExists:
 		response.Status = model.ValidationStatusInvalidDomain
+		response.Score = 40
 	case !response.Validations.MXRecords:
 		response.Status = model.ValidationStatusNoMXRecords
-		response.Score = 40 // Override score for no MX records case
+		response.Score = 40
 	case response.Validations.IsDisposable:
 		response.Status = model.ValidationStatusDisposable
 	case response.Score >= 90:
@@ -166,7 +166,10 @@ func (s *EmailService) ValidateEmail(email string) model.EmailValidationResponse
 		response.Status = model.ValidationStatusInvalid
 	}
 
-	return response
+	// Record validation score after status override
+	s.metricsCollector.RecordValidationScore("overall", float64(response.Score))
+
+	return response, nil
 }
 
 // ValidateEmails performs validation on multiple email addresses concurrently
@@ -201,7 +204,7 @@ func (s *EmailService) GetAPIStatus() model.APIStatus {
 		Status:            "healthy",
 		Uptime:            uptime.String(),
 		RequestsHandled:   atomic.LoadInt64(&s.requests),
-		AvgResponseTimeMs: 25.0, // This should be calculated based on actual metrics
+		AvgResponseTimeMs: 0, // TODO: calculate from actual request metrics
 	}
 }
 

@@ -65,10 +65,8 @@ func (h *Handler) RegisterRoutes(mux *http.ServeMux) {
 func sendError(w http.ResponseWriter, status int, message string) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	if err := json.NewEncoder(w).Encode(map[string]string{"error": message}); err != nil {
-		// If we can't send the error response, log it and write a plain text response
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-	}
+	// Best-effort write; headers are already sent so there's nothing more we can do on failure
+	_ = json.NewEncoder(w).Encode(map[string]string{"error": message})
 }
 
 // HandleValidate handles email validation requests
@@ -93,7 +91,11 @@ func (h *Handler) HandleValidate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result := h.emailService.ValidateEmail(req.Email)
+	result, err := h.emailService.ValidateEmail(req.Email)
+	if err != nil {
+		sendError(w, http.StatusServiceUnavailable, "DNS lookup failed; unable to validate email at this time")
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(result); err != nil {

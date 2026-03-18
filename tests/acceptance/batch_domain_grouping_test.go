@@ -275,16 +275,14 @@ func (s *MockEmailService) ValidateEmail(email string) model.EmailValidationResp
 	response.Validations.MXRecords = s.validator.ValidateMXRecords(domain)
 	response.Validations.IsDisposable = s.validator.IsDisposable(domain)
 	response.Validations.IsRoleBased = s.validator.IsRoleBased(email)
-	response.Validations.MailboxExists = response.Validations.MXRecords
 
 	// Calculate score
 	validationMap := map[string]bool{
-		"syntax":         response.Validations.Syntax,
-		"domain_exists":  response.Validations.DomainExists,
-		"mx_records":     response.Validations.MXRecords,
-		"mailbox_exists": response.Validations.MailboxExists,
-		"is_disposable":  response.Validations.IsDisposable,
-		"is_role_based":  response.Validations.IsRoleBased,
+		"syntax":        response.Validations.Syntax,
+		"domain_exists": response.Validations.DomainExists,
+		"mx_records":    response.Validations.MXRecords,
+		"is_disposable": response.Validations.IsDisposable,
+		"is_role_based": response.Validations.IsRoleBased,
 	}
 	response.Score = s.validator.CalculateScore(validationMap)
 
@@ -407,16 +405,14 @@ func (s *MockEmailService) ValidateEmails(emails []string) model.BatchValidation
 
 		// Check if role-based (this is per-email, not per-domain)
 		response.Validations.IsRoleBased = s.validator.IsRoleBased(email)
-		response.Validations.MailboxExists = response.Validations.MXRecords
 
 		// Calculate score
 		validationMap := map[string]bool{
-			"syntax":         response.Validations.Syntax,
-			"domain_exists":  response.Validations.DomainExists,
-			"mx_records":     response.Validations.MXRecords,
-			"mailbox_exists": response.Validations.MailboxExists,
-			"is_disposable":  response.Validations.IsDisposable,
-			"is_role_based":  response.Validations.IsRoleBased,
+			"syntax":        response.Validations.Syntax,
+			"domain_exists": response.Validations.DomainExists,
+			"mx_records":    response.Validations.MXRecords,
+			"is_disposable": response.Validations.IsDisposable,
+			"is_role_based": response.Validations.IsRoleBased,
 		}
 		response.Score = s.validator.CalculateScore(validationMap)
 

@@ -2,26 +2,29 @@ package validator
 
 import (
 	"context"
+	"log"
 	"sync"
 	"time"
 
 	"emailvalidator/pkg/cache"
 )
 
-// domainCache represents a cached domain lookup result
-type domainCache struct {
-	exists    bool
-	timestamp time.Time
+// DomainCacheEntry represents a cached domain lookup result
+type DomainCacheEntry struct {
+	HasARecord bool `json:"has_a_record"`
+	HasMX      bool `json:"has_mx"`
+	timestamp  time.Time
 }
 
-// DomainCacheResult is the structure stored in Redis cache
-type DomainCacheResult struct {
-	Exists bool `json:"exists"`
+// domainCacheRedis is the structure stored in Redis cache (exported fields only)
+type domainCacheRedis struct {
+	HasARecord bool `json:"has_a_record"`
+	HasMX      bool `json:"has_mx"`
 }
 
 // DomainCacheManager handles caching of domain validation results
 type DomainCacheManager struct {
-	localCache    map[string]domainCache
+	localCache    map[string]DomainCacheEntry
 	cacheMutex    sync.RWMutex
 	cacheDuration time.Duration
 	redisCache    cache.Cache
@@ -30,7 +33,7 @@ type DomainCacheManager struct {
 // NewDomainCacheManager creates a new instance of DomainCacheManager with local cache only
 func NewDomainCacheManager(duration time.Duration) *DomainCacheManager {
 	return &DomainCacheManager{
-		localCache:    make(map[string]domainCache, 100), // Pre-allocate space for better performance
+		localCache:    make(map[string]DomainCacheEntry, 100),
 		cacheDuration: duration,
 		redisCache:    nil,
 	}
@@ -39,56 +42,60 @@ func NewDomainCacheManager(duration time.Duration) *DomainCacheManager {
 // NewDomainCacheManagerWithRedis creates a new instance of DomainCacheManager with Redis cache
 func NewDomainCacheManagerWithRedis(duration time.Duration, redisCache cache.Cache) *DomainCacheManager {
 	return &DomainCacheManager{
-		localCache:    make(map[string]domainCache, 100),
+		localCache:    make(map[string]DomainCacheEntry, 100),
 		cacheDuration: duration,
 		redisCache:    redisCache,
 	}
 }
 
-// Get retrieves a cached domain validation result
-func (m *DomainCacheManager) Get(domain string) (bool, bool) {
+// Get retrieves a cached domain validation result.
+// Returns (entry, found).
+func (m *DomainCacheManager) Get(domain string) (DomainCacheEntry, bool) {
 	// L1: Check local in-memory cache first (fastest)
 	m.cacheMutex.RLock()
 	cached, ok := m.localCache[domain]
 	if ok && time.Since(cached.timestamp) <= m.cacheDuration {
 		m.cacheMutex.RUnlock()
-		return cached.exists, true
+		return cached, true
 	}
 	m.cacheMutex.RUnlock()
 
 	// L2: Fall back to Redis if available
 	if m.redisCache != nil {
-		var result DomainCacheResult
+		var result domainCacheRedis
 		err := m.redisCache.Get(context.Background(), "domain:"+domain, &result)
 		if err == nil {
+			entry := DomainCacheEntry{
+				HasARecord: result.HasARecord,
+				HasMX:      result.HasMX,
+				timestamp:  time.Now(),
+			}
 			// Populate L1 cache from L2 hit
 			m.cacheMutex.Lock()
-			m.localCache[domain] = domainCache{
-				exists:    result.Exists,
-				timestamp: time.Now(),
-			}
+			m.localCache[domain] = entry
 			m.cacheMutex.Unlock()
-			return result.Exists, true
+			return entry, true
 		}
 	}
 
-	return false, false
+	return DomainCacheEntry{}, false
 }
 
 // Set stores a domain validation result in both L1 (local) and L2 (Redis) caches
-func (m *DomainCacheManager) Set(domain string, exists bool) {
+func (m *DomainCacheManager) Set(domain string, entry DomainCacheEntry) {
+	entry.timestamp = time.Now()
+
 	// L1: Store in local in-memory cache
 	m.cacheMutex.Lock()
-	m.localCache[domain] = domainCache{
-		exists:    exists,
-		timestamp: time.Now(),
-	}
+	m.localCache[domain] = entry
 	m.cacheMutex.Unlock()
 
 	// L2: Store in Redis if available
 	if m.redisCache != nil {
-		result := DomainCacheResult{Exists: exists}
-		_ = m.redisCache.Set(context.Background(), "domain:"+domain, result, m.cacheDuration)
+		result := domainCacheRedis{HasARecord: entry.HasARecord, HasMX: entry.HasMX}
+		if err := m.redisCache.Set(context.Background(), "domain:"+domain, result, m.cacheDuration); err != nil {
+			log.Printf("WARNING: failed to write domain cache to Redis for %s: %v", domain, err)
+		}
 	}
 }
 

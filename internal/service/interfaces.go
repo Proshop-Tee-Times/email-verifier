@@ -7,16 +7,17 @@ import (
 
 // EmailValidator defines the contract for email validation operations
 type EmailValidator interface {
-	ValidateEmail(email string) model.EmailValidationResponse
+	ValidateEmail(email string) (model.EmailValidationResponse, error)
 	ValidateEmails(emails []string) model.BatchValidationResponse
 	GetTypoSuggestions(email string) model.TypoSuggestionResponse
 }
 
 // DomainValidator defines the contract for domain-specific validations
 type DomainValidator interface {
-	ValidateDomain(domain string) bool
-	ValidateMXRecords(domain string) bool
+	ValidateDomain(domain string) (bool, error)
+	ValidateMXRecords(domain string) (bool, error)
 	IsDisposable(domain string) bool
+	CacheDomainResult(domain string, hasARecord, hasMX bool)
 }
 
 // EmailRuleValidator defines the contract for email-specific rule validations
@@ -36,7 +37,7 @@ type MetricsCollector interface {
 
 // DomainValidationService defines the contract for concurrent domain validation operations
 type DomainValidationService interface {
-	ValidateDomainConcurrently(ctx context.Context, domain string) (exists, hasMX, isDisposable bool)
+	ValidateDomainConcurrently(ctx context.Context, domain string) (exists, hasMX, isDisposable bool, err error)
 }
 
 // AliasDetector defines the contract for detecting email aliases
