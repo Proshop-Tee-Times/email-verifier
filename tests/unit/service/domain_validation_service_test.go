@@ -72,8 +72,8 @@ func TestConcurrentDomainValidationService_ValidateDomainConcurrently(t *testing
 			domain:  "slow.com",
 			timeout: 1 * time.Millisecond,
 			setup: func(mv *mocks.MockDomainValidator) {
-				mv.On("ValidateDomain", "slow.com").After(10 * time.Millisecond).Return(true, nil)
-				mv.On("ValidateMXRecords", "slow.com").After(10 * time.Millisecond).Return(true, nil)
+				mv.On("ValidateDomain", "slow.com").After(10*time.Millisecond).Return(true, nil)
+				mv.On("ValidateMXRecords", "slow.com").After(10*time.Millisecond).Return(true, nil)
 				mv.On("IsDisposable", "slow.com").After(10 * time.Millisecond).Return(false)
 				// CacheDomainResult may or may not be called depending on timing
 				mv.On("CacheDomainResult", mock.Anything, mock.Anything, mock.Anything).Maybe()

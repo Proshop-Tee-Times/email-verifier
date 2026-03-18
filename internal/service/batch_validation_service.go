@@ -121,7 +121,7 @@ func (s *BatchValidationService) processEmails(
 	resultsMap := make(map[string]model.EmailValidationResponse)
 
 	// Identify which emails can be validated (domain lookup succeeded)
-	var validatable []string
+	validatable := make([]string, 0, len(emails))
 	for _, email := range emails {
 		if email == "" {
 			// Empty emails get a response (MISSING_EMAIL), no domain lookup needed
