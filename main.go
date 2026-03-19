@@ -93,7 +93,7 @@ func main() {
 		Addr:              ":" + port,
 		Handler:           finalMux,
 		ReadTimeout:       5 * time.Second,
-		WriteTimeout:      10 * time.Second,
+		WriteTimeout:      120 * time.Second,
 		IdleTimeout:       120 * time.Second,
 		ReadHeaderTimeout: 2 * time.Second,
 	}
